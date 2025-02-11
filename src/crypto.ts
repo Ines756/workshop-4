@@ -29,26 +29,54 @@ export async function generateRsaKeyPair(): Promise<GenerateRsaKeyPair> {
   //      the public key should be used for encryption and the private key for decryption. Make sure the
   //      keys are extractable.
 
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: 'RSA-OAEP', 
+      modulusLength: 2048, // Length of the key
+      publicExponent: new Uint8Array([1, 0, 1]), // Common public exponent
+      hash: 'SHA-256', 
+    },
+    true, // Allow key extraction
+    ['encrypt', 'decrypt'] // Public key for encryption, private key for decryption
+  );
+
+  return {
+    publicKey: keyPair.publicKey,
+    privateKey: keyPair.privateKey
+  };
   // remove this
-  return { publicKey: {} as any, privateKey: {} as any };
+  //return { publicKey: {} as any, privateKey: {} as any };
 }
 
 // Export a crypto public key to a base64 string format
 export async function exportPubKey(key: webcrypto.CryptoKey): Promise<string> {
   // TODO implement this function to return a base64 string version of a public key
 
+  const exported = await crypto.subtle.exportKey("spki", key);
+  const exportedKeyBuffer = new Uint8Array(exported);
+  const base64Key = btoa(String.fromCharCode(...exportedKeyBuffer));
+
+  return base64Key;
+
   // remove this
-  return "";
+  //return "";
 }
 
 // Export a crypto private key to a base64 string format
-export async function exportPrvKey(
-  key: webcrypto.CryptoKey | null
-): Promise<string | null> {
+export async function exportPrvKey(key: webcrypto.CryptoKey | null): Promise<string | null> {
   // TODO implement this function to return a base64 string version of a private key
 
+  if (!key) {
+    return null; // Si la clé est nulle
+  }
+  const exportedKey = await crypto.subtle.exportKey('pkcs8', key);
+  const exportedKeyBuffer = new Uint8Array(exportedKey);
+  const base64Key = btoa(String.fromCharCode(...exportedKeyBuffer));
+
+  return base64Key;
+
   // remove this
-  return "";
+  //return "";
 }
 
 // Import a base64 string public key to its native format
@@ -57,8 +85,32 @@ export async function importPubKey(
 ): Promise<webcrypto.CryptoKey> {
   // TODO implement this function to go back from the result of the exportPubKey function to it's native crypto key object
 
+   // Décoder la chaîne base64 en ArrayBuffer
+   const binaryKey = atob(strKey);
+   const buffer = new ArrayBuffer(binaryKey.length);
+   const view = new Uint8Array(buffer);
+ 
+   // Remplir l'ArrayBuffer avec les données de la chaîne décodée
+   for (let i = 0; i < binaryKey.length; i++) {
+     view[i] = binaryKey.charCodeAt(i);
+   }
+ 
+   // Importer la clé publique au format SPKI
+   const key = await crypto.subtle.importKey(
+     'spki', // Format SPKI pour une clé publique
+     buffer, // ArrayBuffer contenant la clé publique
+     {
+       name: 'RSA-OAEP', // Le même algorithme utilisé pour la génération de la clé
+       hash: 'SHA-256',
+     },
+     true, // La clé doit être exportable
+     ['encrypt'] // La clé publique est utilisée pour l'encryption
+   );
+ 
+   return key;
+  
   // remove this
-  return {} as any;
+  //return {} as any;
 }
 
 // Import a base64 string private key to its native format
@@ -67,8 +119,32 @@ export async function importPrvKey(
 ): Promise<webcrypto.CryptoKey> {
   // TODO implement this function to go back from the result of the exportPrvKey function to it's native crypto key object
 
+  // Décoder la chaîne base64 en ArrayBuffer
+  const binaryKey = atob(strKey);
+  const buffer = new ArrayBuffer(binaryKey.length);
+  const view = new Uint8Array(buffer);
+
+  // Remplir l'ArrayBuffer avec les données de la chaîne décodée
+  for (let i = 0; i < binaryKey.length; i++) {
+    view[i] = binaryKey.charCodeAt(i);
+  }
+
+  // Importer la clé privée au format PKCS#8
+  const key = await crypto.subtle.importKey(
+    'pkcs8', // Format PKCS#8 pour une clé privée
+    buffer, // ArrayBuffer contenant la clé privée
+    {
+      name: 'RSA-OAEP', // Le même algorithme utilisé pour la génération de la clé
+      hash: 'SHA-256',
+    },
+    true, // La clé doit être exportable
+    ['decrypt'] // La clé privée est utilisée pour la décryption
+  );
+
+  return key;
+
   // remove this
-  return {} as any;
+  //return {} as any;
 }
 
 // Encrypt a message using an RSA public key

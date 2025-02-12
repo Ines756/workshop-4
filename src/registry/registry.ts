@@ -14,51 +14,38 @@ export type GetNodeRegistryBody = {
   nodes: Node[];
 };
 
+let nodesRegistry: Node[] = []; // Tableau pour stocker les nœuds enregistrés
+
 export async function launchRegistry() {
   const _registry = express();
   _registry.use(express.json());
   _registry.use(bodyParser.json());
 
-  // TODO implement the status route
-  // _registry.get("/status", (req, res) => {});
+  // Route /status
   _registry.get("/status", (req, res) => {
     res.send("live");
   });
 
-  // Stockage temporaire des nœuds
-  const registeredNodes: Node[] = [];
-
   // Route pour enregistrer un nœud
   _registry.post("/registerNode", (req: Request, res: Response) => {
-    const { nodeId, pubKey } = req.body as RegisterNodeBody;
-    if ((nodeId !== null && typeof nodeId !== 'number')|| !pubKey) {
-      return res.status(400).json({ error: "Missing nodeId or pubKey" });
+    const { nodeId, pubKey }: RegisterNodeBody = req.body;
+    if (!nodeId || !pubKey) {
+      return res.status(400).json({ error: "nodeId and pubKey are required" });
     }
-    const existingNode = registeredNodes.find((node) => node.nodeId === nodeId);
-    if (existingNode) {
-      return res.status(409).json({ error: "Node already registered" });
-    }
-    registeredNodes.push({ nodeId, pubKey });
-
-    console.log("Registered Nodes:", registeredNodes);
-
-    return res.status(201).json({
-      message: "Node registered successfully",
-      nodeId : nodeId,
-      pubKey: pubKey,
-    });
+    // Ajouter le nœud au registre
+    nodesRegistry.push({ nodeId, pubKey });
+    console.log(`Node ${nodeId} registered with public key: ${pubKey}`);
+    return res.status(200).json({ message: "Node registered successfully" });
   });
 
-  // Route pour récupérer tous les nœuds enregistrés
+  // Route pour obtenir le registre des nœuds
   _registry.get("/getNodeRegistry", (req: Request, res: Response) => {
-    return res.json({ nodes: registeredNodes });
+    res.json({ nodes: nodesRegistry });
   });
 
   const server = _registry.listen(REGISTRY_PORT, () => {
-    console.log(`registry is listening on port ${REGISTRY_PORT}`);
+    console.log(`Registry is listening on port ${REGISTRY_PORT}`);
   });
 
   return server;
 }
-
-

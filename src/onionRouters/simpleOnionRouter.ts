@@ -9,7 +9,7 @@ export async function simpleOnionRouter(nodeId: number) {
 
   // TODO implement the status route
   // onionRouter.get("/status", (req, res) => {});
-  onionRouter.get("/status", (req, res) => {
+  onionRouter.get("/status", (req, res) => { 
     res.send("live");
   });
 

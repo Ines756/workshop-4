@@ -127,7 +127,7 @@ async function getNodeRegistry() {
     .then((res) => res.json() as Promise<GetNodeRegistryBody>)
     .then((json) => json.nodes);
 
-  return nodes;
+  return nodes; 
 }
 
 describe("Onion Routing", () => {
